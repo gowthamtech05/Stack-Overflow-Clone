@@ -1,11 +1,10 @@
 import nodemailer from "nodemailer";
 
-// ✅ Brevo SMTP — works on Render free tier
 const createTransporter = () =>
   nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true, // SSL
     auth: {
       user: process.env.BREVO_SMTP_USER,
       pass: process.env.BREVO_SMTP_PASS,
