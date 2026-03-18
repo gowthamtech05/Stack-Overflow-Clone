@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     phone: { type: String, trim: true, default: null },
     password: { type: String, required: true },
+
+    isVerified: { type: Boolean, default: false },
+    registerOTP: { type: Number, default: null },
+    registerOTPExpiry: { type: Date, default: null },
+
     points: { type: Number, default: 0 },
     reputation: { type: Number, default: 0 },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
