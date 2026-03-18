@@ -7,13 +7,19 @@ import { sendPasswordResetEmail, sendOTPEmail } from "../utils/sendEmail.js";
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
+// ✅ Works on both localhost and production HTTPS
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: "none",
+  secure: true,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 function parseUA(req) {
   const parser = new UAParser(req.headers["user-agent"]);
   const result = parser.getResult();
-
   const browser = result.browser.name || "Unknown";
   const os = result.os.name || "Unknown";
-
   const deviceType = result.device.type;
   let device = "Desktop";
   if (deviceType === "mobile") device = "Mobile";
@@ -23,12 +29,10 @@ function parseUA(req) {
     os?.toLowerCase().includes("mac")
   )
     device = "Desktop";
-
   const ip =
     req.headers["x-forwarded-for"]?.split(",")[0] ||
     req.socket?.remoteAddress ||
     "Unknown";
-
   return { browser, os, device, ip };
 }
 
@@ -52,37 +56,70 @@ function isChrome(browser) {
   );
 }
 
-function isMicrosoft(browser) {
-  return (
-    browser?.toLowerCase().includes("edge") ||
-    browser?.toLowerCase().includes("ie") ||
-    browser?.toLowerCase().includes("internet explorer")
-  );
-}
-
 export const registerUser = async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email, isVerified: true });
     if (userExists)
       return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      name,
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    await User.findOneAndUpdate(
+      { email },
+      {
+        name,
+        email,
+        phone: phone || null,
+        password: hashedPassword,
+        isVerified: false,
+        registerOTP: otp,
+        registerOTPExpiry: new Date(Date.now() + 10 * 60 * 1000),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    await sendOTPEmail(email, "Verify your account", otp);
+
+    res.status(200).json({
+      requireOTP: true,
       email,
-      phone,
-      password: hashedPassword,
+      message:
+        "OTP sent to your email. Please verify to complete registration.",
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const verifyRegisterOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    if (!user.registerOTP || user.registerOTPExpiry < new Date()) {
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please register again." });
+    }
+
+    if (parseInt(otp) !== user.registerOTP) {
+      return res
+        .status(400)
+        .json({ message: "Invalid OTP. Please try again." });
+    }
+
+    user.isVerified = true;
+    user.registerOTP = null;
+    user.registerOTPExpiry = null;
+    await user.save();
 
     const token = generateToken(user._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.status(201).json({
       _id: user._id,
@@ -103,9 +140,16 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
+    if (user.isVerified === false) {
+      return res.status(403).json({
+        message: "Please verify your email before logging in.",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
+
     if (device === "Mobile" && !isMobileTimeAllowed()) {
       return res.status(403).json({
         message: "Mobile login is only allowed between 10:00 AM – 1:00 PM IST.",
@@ -118,9 +162,7 @@ export const loginUser = async (req, res) => {
       user.loginOTPExpiry = new Date(Date.now() + 10 * 60000);
       user.pendingLoginData = { browser, os, device, ip };
       await user.save();
-
       await sendOTPEmail(user.email, "Login OTP", otp);
-
       return res.status(200).json({
         requireOTP: true,
         email: user.email,
@@ -134,12 +176,7 @@ export const loginUser = async (req, res) => {
     await user.save();
 
     const token = generateToken(user._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.json({
       _id: user._id,
@@ -158,7 +195,6 @@ export const loginUser = async (req, res) => {
 export const verifyLoginOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -184,12 +220,7 @@ export const verifyLoginOTP = async (req, res) => {
     await user.save();
 
     const token = generateToken(user._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.json({
       _id: user._id,
@@ -205,13 +236,19 @@ export const verifyLoginOTP = async (req, res) => {
 };
 
 export const logoutUser = (req, res) => {
-  res.cookie("token", "", { httpOnly: true, expires: new Date(0) });
+  res.cookie("token", "", {
+    httpOnly: true,
+    sameSite: "none",
+    secure: true,
+    expires: new Date(0),
+  });
   res.json({ message: "Logged out" });
 };
 
 export const getMe = async (req, res) => {
   res.json(req.user);
 };
+
 export const forgotPassword = async (req, res) => {
   try {
     const { email, phone } = req.body;
