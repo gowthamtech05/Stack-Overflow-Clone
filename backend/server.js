@@ -64,6 +64,8 @@ app.get("/", (req, res) => {
   res.send("StackOverflow Clone API Running...");
 });
 
+app.get("/health", (req, res) => res.json({ status: "ok" }));
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
