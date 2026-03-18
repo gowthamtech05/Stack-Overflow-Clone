@@ -1,20 +1,21 @@
 import nodemailer from "nodemailer";
 
-// ✅ Single transporter with IPv4 forced — fixes Render free tier IPv6 issue
+// ✅ Brevo SMTP — works on Render free tier
 const createTransporter = () =>
   nodemailer.createTransport({
-    service: "gmail",
-    family: 4, // force IPv4
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.BREVO_SMTP_USER,
+      pass: process.env.BREVO_SMTP_PASS,
     },
   });
 
 export const sendPasswordResetEmail = async (email, newPassword) => {
   const transporter = createTransporter();
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: `"Stack Overflow Clone" <${process.env.BREVO_SMTP_USER}>`,
     to: email,
     subject: "Your New Password",
     text: `Your new password is: ${newPassword}\n\n`,
@@ -40,7 +41,7 @@ export const sendOTPEmail = async (email, subject, otp) => {
       : "Use the OTP below to proceed.";
 
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: `"Stack Overflow Clone" <${process.env.BREVO_SMTP_USER}>`,
     to: email,
     subject: title,
     html: `
