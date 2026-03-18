@@ -7,7 +7,6 @@ import { sendPasswordResetEmail, sendOTPEmail } from "../utils/sendEmail.js";
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-// ✅ Works on both localhost and production HTTPS
 const cookieOptions = {
   httpOnly: true,
   sameSite: "none",
@@ -81,7 +80,10 @@ export const registerUser = async (req, res) => {
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
-    await sendOTPEmail(email, "Verify your account", otp);
+    // ✅ Fire and forget — respond instantly, email sends in background
+    sendOTPEmail(email, "Verify your account", otp).catch((err) =>
+      console.error("Register OTP email failed:", err.message),
+    );
 
     res.status(200).json({
       requireOTP: true,
@@ -162,7 +164,12 @@ export const loginUser = async (req, res) => {
       user.loginOTPExpiry = new Date(Date.now() + 10 * 60000);
       user.pendingLoginData = { browser, os, device, ip };
       await user.save();
-      await sendOTPEmail(user.email, "Login OTP", otp);
+
+      // ✅ Fire and forget — respond instantly, email sends in background
+      sendOTPEmail(user.email, "Login OTP", otp).catch((err) =>
+        console.error("Login OTP email failed:", err.message),
+      );
+
       return res.status(200).json({
         requireOTP: true,
         email: user.email,
@@ -279,10 +286,13 @@ export const forgotPassword = async (req, res) => {
     user.forgotPasswordRequestedAt = new Date();
     await user.save();
 
+    // ✅ Fire and forget
     if (email) {
-      await sendPasswordResetEmail(
+      sendPasswordResetEmail(
         user.email,
         `Your new password is: ${newPassword}`,
+      ).catch((err) =>
+        console.error("Password reset email failed:", err.message),
       );
     }
 
