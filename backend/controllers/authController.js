@@ -78,7 +78,7 @@ export const registerUser = async (req, res) => {
         registerOTP: otp,
         registerOTPExpiry: new Date(Date.now() + 10 * 60 * 1000),
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
     await sendOTPEmail(email, "Verify your account", otp);
