@@ -24,6 +24,9 @@ export default function Navbar({ darkMode, setDarkMode }) {
   const [otpError, setOtpError] = useState("");
   const [otpSuccess, setOtpSuccess] = useState("");
 
+  // ✅ Unread notification count
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
   const langMenuRef = useRef(null);
@@ -31,6 +34,27 @@ export default function Navbar({ darkMode, setDarkMode }) {
   const debounceRef = useRef(null);
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.label === language);
+
+  // ✅ Fetch unread count on mount and every 30s
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      try {
+        const { data } = await API.get("/notifications/unread-count");
+        setUnreadCount(data.count);
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // ✅ Reset count when user navigates to notifications page
+  useEffect(() => {
+    if (location.pathname === "/notifications") {
+      setUnreadCount(0);
+    }
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await logout();
@@ -365,6 +389,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
                 </div>
               )}
             </div>
+
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 transition-colors"
@@ -391,6 +416,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
                 </svg>
               )}
             </button>
+
             {!user ? (
               <div className="hidden md:flex items-center gap-1.5 ml-1">
                 <Link
@@ -408,9 +434,10 @@ export default function Navbar({ darkMode, setDarkMode }) {
               </div>
             ) : (
               <div className="hidden md:flex items-center gap-1 ml-1">
+                {/* ✅ Notification bell with unread badge */}
                 <Link
                   to="/notifications"
-                  className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 transition-colors"
+                  className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 transition-colors"
                 >
                   <svg
                     className="w-4 h-4"
@@ -425,6 +452,11 @@ export default function Navbar({ darkMode, setDarkMode }) {
                       d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-5M13 21a2 2 0 01-4 0"
                     />
                   </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-orange-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 leading-none">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </Link>
 
                 <div className="relative" ref={dropdownRef}>
@@ -541,6 +573,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
                 </div>
               </div>
             )}
+
             <div className="md:hidden relative" ref={mobileMenuRef}>
               <button
                 onClick={() => setMobileMenuOpen((p) => !p)}
@@ -561,19 +594,25 @@ export default function Navbar({ darkMode, setDarkMode }) {
                     />
                   </svg>
                 ) : (
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
+                  <div className="relative">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16"
+                      />
+                    </svg>
+                    {/* ✅ Badge on mobile hamburger too */}
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full border-2 border-white dark:border-gray-900" />
+                    )}
+                  </div>
                 )}
               </button>
 
@@ -678,7 +717,10 @@ export default function Navbar({ darkMode, setDarkMode }) {
                         </div>
                         {[
                           { to: `/profile/${user._id}`, label: "My Profile" },
-                          { to: "/notifications", label: "Notifications" },
+                          {
+                            to: "/notifications",
+                            label: `Notifications${unreadCount > 0 ? ` (${unreadCount})` : ""}`,
+                          },
                           { to: "/subscription", label: "Subscription" },
                           { to: "/ask", label: "+ Ask Question" },
                         ].map(({ to, label }) => (
@@ -709,6 +751,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
           </div>
         </div>
       </header>
+
       {otpModal && pendingLanguage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
