@@ -14,6 +14,19 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// ✅ New route — unread count
+router.get("/unread-count", protect, async (req, res) => {
+  try {
+    const count = await Notification.countDocuments({
+      user: req.user._id,
+      read: false,
+    });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.put("/mark-all-read", protect, async (req, res) => {
   try {
     await Notification.updateMany({ user: req.user._id }, { read: true });
