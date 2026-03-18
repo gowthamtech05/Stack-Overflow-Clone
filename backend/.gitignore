@@ -1,0 +1,17 @@
+# Environment variables
+.env
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads (local files, use Cloudinary in prod)
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
