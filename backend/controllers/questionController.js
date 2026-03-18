@@ -2,36 +2,38 @@ import Question from "../models/Question.js";
 import User from "../models/User.js";
 import Answer from "../models/Answer.js";
 
+const LIMITS = { Free: 1, Bronze: 5, Silver: 10, Gold: Infinity };
+
+// ✅ Helper: reset daily count if new day, return current used count
+const getDailyUsed = (user) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const lastDate = user.dailyQuestionDate
+    ? new Date(user.dailyQuestionDate)
+    : null;
+  if (!lastDate || lastDate < today) {
+    user.dailyQuestionCount = 0;
+    user.dailyQuestionDate = today;
+  }
+  return user.dailyQuestionCount || 0;
+};
+
 export const askQuestion = async (req, res) => {
   try {
     const { title, description, tags } = req.body;
-
     const user = await User.findById(req.user._id);
 
     // Check subscription expiry
     if (user.subscriptionExpiry && user.subscriptionExpiry < new Date()) {
       user.subscriptionPlan = "Free";
       user.subscriptionExpiry = null;
-      await user.save();
     }
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const limit = LIMITS[user.subscriptionPlan] || 1;
+    const used = getDailyUsed(user); // ✅ uses stored count, unaffected by deletions
 
-    const todayCount = await Question.countDocuments({
-      user: user._id,
-      createdAt: { $gte: startOfDay },
-    });
-    const limits = {
-      Free: 1,
-      Bronze: 5,
-      Silver: 10,
-      Gold: Infinity,
-    };
-
-    const limit = limits[user.subscriptionPlan] || 1;
-
-    if (todayCount >= limit) {
+    if (used >= limit) {
+      await user.save();
       return res.status(400).json({
         message: `Daily limit reached for ${user.subscriptionPlan} plan`,
       });
@@ -44,7 +46,36 @@ export const askQuestion = async (req, res) => {
       tags,
     });
 
+    // ✅ Increment stored count
+    user.dailyQuestionCount = used + 1;
+    await user.save();
+
     res.status(201).json(question);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getDailyLimitStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    // Check subscription expiry
+    if (user.subscriptionExpiry && user.subscriptionExpiry < new Date()) {
+      user.subscriptionPlan = "Free";
+      user.subscriptionExpiry = null;
+      await user.save();
+    }
+
+    const limit = LIMITS[user.subscriptionPlan] || 1;
+    const used = getDailyUsed(user); // ✅ uses stored count
+
+    res.json({
+      plan: user.subscriptionPlan,
+      used,
+      limit,
+      remaining: limit === Infinity ? "Unlimited" : Math.max(0, limit - used),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -90,6 +121,7 @@ export const getQuestions = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 export const voteQuestion = async (req, res) => {
   try {
     const { type } = req.body;
@@ -115,14 +147,10 @@ export const voteQuestion = async (req, res) => {
       (id) => id.toString() !== userId,
     );
 
-    if (type === "upvote") {
-      if (!alreadyUpvoted) {
-        question.upvotes.push(req.user._id);
-      }
-    } else if (type === "downvote") {
-      if (!alreadyDownvoted) {
-        question.downvotes.push(req.user._id);
-      }
+    if (type === "upvote" && !alreadyUpvoted) {
+      question.upvotes.push(req.user._id);
+    } else if (type === "downvote" && !alreadyDownvoted) {
+      question.downvotes.push(req.user._id);
     }
 
     await question.save();
@@ -142,43 +170,9 @@ export const getSingleQuestion = async (req, res) => {
       "user",
       "name points",
     );
-
     if (!question)
       return res.status(404).json({ message: "Question not found" });
-
     res.json(question);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getDailyLimitStatus = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const todayCount = await Question.countDocuments({
-      user: user._id,
-      createdAt: { $gte: startOfDay },
-    });
-
-    const limits = {
-      Free: 1,
-      Bronze: 5,
-      Silver: 10,
-      Gold: Infinity,
-    };
-
-    const limit = limits[user.subscriptionPlan] || 1;
-
-    res.json({
-      plan: user.subscriptionPlan,
-      used: todayCount,
-      limit,
-      remaining: limit === Infinity ? "Unlimited" : limit - todayCount,
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -195,7 +189,6 @@ export const deleteQuestion = async (req, res) => {
     }
 
     await Answer.deleteMany({ question: question._id });
-
     await question.deleteOne();
     res.json({ message: "Question deleted" });
   } catch (err) {

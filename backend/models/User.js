@@ -19,6 +19,9 @@ const userSchema = new mongoose.Schema(
     registerOTP: { type: Number, default: null },
     registerOTPExpiry: { type: Date, default: null },
 
+    dailyQuestionCount: { type: Number, default: 0 },
+    dailyQuestionDate: { type: Date, default: null },
+
     points: { type: Number, default: 0 },
     reputation: { type: Number, default: 0 },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
