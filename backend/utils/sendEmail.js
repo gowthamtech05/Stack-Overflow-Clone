@@ -1,14 +1,18 @@
 import nodemailer from "nodemailer";
 
-export const sendPasswordResetEmail = async (email, newPassword) => {
-  const transporter = nodemailer.createTransport({
+// ✅ Single transporter with IPv4 forced — fixes Render free tier IPv6 issue
+const createTransporter = () =>
+  nodemailer.createTransport({
     service: "gmail",
+    family: 4, // force IPv4
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
   });
 
+export const sendPasswordResetEmail = async (email, newPassword) => {
+  const transporter = createTransporter();
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: email,
@@ -17,23 +21,32 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
   });
 };
 
-export const sendOTPEmail = async (email, language, otp) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+export const sendOTPEmail = async (email, subject, otp) => {
+  const transporter = createTransporter();
+
+  const isLogin = subject?.toLowerCase().includes("login");
+  const isRegister = subject?.toLowerCase().includes("verify");
+
+  const title = isRegister
+    ? "Verify your account"
+    : isLogin
+      ? "Login Verification"
+      : "Your OTP Code";
+
+  const description = isRegister
+    ? "You're almost there! Use the OTP below to verify your email and complete registration."
+    : isLogin
+      ? "Use the OTP below to complete your login."
+      : "Use the OTP below to proceed.";
 
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "Language Change OTP",
+    subject: title,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
-        <h2 style="color: #f97316;">Language Change Verification</h2>
-        <p>You requested to switch the website language to <strong>${language}</strong>.</p>
+        <h2 style="color: #f97316;">${title}</h2>
+        <p>${description}</p>
         <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
           <p style="margin: 0; font-size: 13px; color: #6b7280;">Your OTP</p>
           <h1 style="margin: 8px 0; color: #111; letter-spacing: 8px;">${otp}</h1>
