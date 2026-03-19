@@ -18,11 +18,14 @@ During my internship, I extended this project by implementing advanced features 
 - Device-based and time-based authentication
 
 ## Tech Stack
-- Frontend: React.js
+- Frontend: React.js, Vite, Tailwind CSS, React Router, Axios, i18next
 - Backend: Node.js, Express.js
-- Database: MongoDB
-- Authentication: JWT
-- Payment Integration: Razorpay / Stripe
+- Database: MongoDB, Mongoose
+- Authentication: JWT, bcrypt
+- Payment Integration: Razorpay
+- Media Storage: Cloudinary, Multer
+- Email Service: Nodemailer, Brevo (Sendinblue)
+- Utilities: ua-parser-js (device/browser detection), Crypto (OTP generation), CORS, Cookie-parser 
 
 ## Live Demo
 https://stack-overflow-updated.vercel.app/
