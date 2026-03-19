@@ -42,10 +42,10 @@ export default function AskQuestion() {
       });
       navigate("/");
     } catch (err) {
-      // ✅ Show exact backend error (e.g. "Daily limit reached for Free plan")
+      
       const msg = err.response?.data?.message || "Error creating question";
       setError(msg);
-      // ✅ Refresh limit info to show updated usage
+      
       await fetchLimitInfo();
     } finally {
       setSubmitting(false);
@@ -77,7 +77,7 @@ export default function AskQuestion() {
         )}
       </div>
 
-      {/* ✅ Limit status card */}
+      {/* Limit status */}
       {limitInfo && (
         <div
           className={`mb-5 rounded-xl border text-[13px] overflow-hidden ${
@@ -119,7 +119,6 @@ export default function AskQuestion() {
                   : `${remaining} left`}
             </span>
           </div>
-          {/* Progress bar */}
           {limitInfo.limit !== Infinity && remaining !== "Unlimited" && (
             <div className="h-1 bg-gray-200 dark:bg-gray-700">
               <div
@@ -137,7 +136,6 @@ export default function AskQuestion() {
         </div>
       )}
 
-      {/* ✅ Error message from backend */}
       {error && (
         <div className="mb-5 px-4 py-3 rounded-xl border bg-red-50 border-red-200 text-red-600 dark:bg-red-900/10 dark:border-red-800 dark:text-red-400 text-[13px] flex items-center gap-2">
           <span>⚠️</span> {error}

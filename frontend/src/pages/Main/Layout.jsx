@@ -22,7 +22,6 @@ export default function Layout({ children }) {
       <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
       <div className="max-w-screen-xl mx-auto flex">
         <Sidebar />
-        {/* Main content */}
         <main className="flex-1 min-w-0 px-4 py-6">{children}</main>
       </div>
     </div>

@@ -4,7 +4,6 @@ import Answer from "../models/Answer.js";
 
 const LIMITS = { Free: 1, Bronze: 5, Silver: 10, Gold: Infinity };
 
-// ✅ Helper: reset daily count if new day, return current used count
 const getDailyUsed = (user) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -22,15 +21,13 @@ export const askQuestion = async (req, res) => {
   try {
     const { title, description, tags } = req.body;
     const user = await User.findById(req.user._id);
-
-    // Check subscription expiry
     if (user.subscriptionExpiry && user.subscriptionExpiry < new Date()) {
       user.subscriptionPlan = "Free";
       user.subscriptionExpiry = null;
     }
 
     const limit = LIMITS[user.subscriptionPlan] || 1;
-    const used = getDailyUsed(user); // ✅ uses stored count, unaffected by deletions
+    const used = getDailyUsed(user);
 
     if (used >= limit) {
       await user.save();
@@ -46,7 +43,6 @@ export const askQuestion = async (req, res) => {
       tags,
     });
 
-    // ✅ Increment stored count
     user.dailyQuestionCount = used + 1;
     await user.save();
 

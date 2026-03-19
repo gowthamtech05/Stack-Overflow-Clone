@@ -80,7 +80,6 @@ export const registerUser = async (req, res) => {
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
-    // ✅ Fire and forget — respond instantly, email sends in background
     sendOTPEmail(email, "Verify your account", otp).catch((err) =>
       console.error("Register OTP email failed:", err.message),
     );
@@ -165,7 +164,6 @@ export const loginUser = async (req, res) => {
       user.pendingLoginData = { browser, os, device, ip };
       await user.save();
 
-      // ✅ Fire and forget — respond instantly, email sends in background
       sendOTPEmail(user.email, "Login OTP", otp).catch((err) =>
         console.error("Login OTP email failed:", err.message),
       );
@@ -285,8 +283,6 @@ export const forgotPassword = async (req, res) => {
     user.password = await bcrypt.hash(newPassword, 10);
     user.forgotPasswordRequestedAt = new Date();
     await user.save();
-
-    // ✅ Fire and forget
     if (email) {
       sendPasswordResetEmail(
         user.email,

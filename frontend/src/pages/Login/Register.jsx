@@ -29,7 +29,6 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // OTP step
   const [otpRequired, setOtpRequired] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -38,7 +37,6 @@ export default function Register() {
   const { setUser } = useAuth();
   const navigate = useNavigate();
 
-  // Step 1: Send OTP
   const submitHandler = async (e) => {
     e.preventDefault();
     setError("");
@@ -67,7 +65,6 @@ export default function Register() {
     }
   };
 
-  // Step 2: Verify OTP
   const otpHandler = async (e) => {
     e.preventDefault();
     setError("");

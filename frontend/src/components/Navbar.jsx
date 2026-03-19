@@ -24,7 +24,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
   const [otpError, setOtpError] = useState("");
   const [otpSuccess, setOtpSuccess] = useState("");
 
-  // ✅ Unread notification count
+
   const [unreadCount, setUnreadCount] = useState(0);
 
   const dropdownRef = useRef(null);
@@ -35,7 +35,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.label === language);
 
-  // ✅ Fetch unread count on mount and every 30s
+  
   useEffect(() => {
     if (!user) return;
     const fetchUnread = async () => {
@@ -49,7 +49,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
     return () => clearInterval(interval);
   }, [user]);
 
-  // ✅ Reset count when user navigates to notifications page
+  
   useEffect(() => {
     if (location.pathname === "/notifications") {
       setUnreadCount(0);
@@ -434,7 +434,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
               </div>
             ) : (
               <div className="hidden md:flex items-center gap-1 ml-1">
-                {/* ✅ Notification bell with unread badge */}
+                
                 <Link
                   to="/notifications"
                   className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 transition-colors"
@@ -608,7 +608,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
                         d="M4 6h16M4 12h16M4 18h16"
                       />
                     </svg>
-                    {/* ✅ Badge on mobile hamburger too */}
+                   
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full border-2 border-white dark:border-gray-900" />
                     )}

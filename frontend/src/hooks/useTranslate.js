@@ -3,7 +3,6 @@ import { useLanguage } from "../context/LanguageContext";
 
 export function useTranslateObject(data, fields) {
   const { language, translateBatch } = useLanguage();
-  // null means "not yet translated" — components show original while waiting
   const [translated, setTranslated] = useState(null);
   const prevKey = useRef("");
 
@@ -21,7 +20,6 @@ export function useTranslateObject(data, fields) {
       return;
     }
 
-    // Build a key from language + data content to detect real changes
     const dataKey =
       language +
       JSON.stringify(items.map((item) => fields.map((f) => item?.[f])));
@@ -29,7 +27,6 @@ export function useTranslateObject(data, fields) {
     if (dataKey === prevKey.current) return;
     prevKey.current = dataKey;
 
-    // English — no API call needed, return originals immediately
     if (language === "English") {
       setTranslated(data);
       return;
@@ -38,7 +35,6 @@ export function useTranslateObject(data, fields) {
     let cancelled = false;
 
     const run = async () => {
-      // Flatten all translatable fields into one single API call
       const allTexts = [];
       items.forEach((item) => {
         fields.forEach((field) => {
@@ -66,7 +62,6 @@ export function useTranslateObject(data, fields) {
     };
   }, [language, data, translateBatch, fields]);
 
-  // While translating, return original so page isn't blank
   return translated ?? data;
 }
 

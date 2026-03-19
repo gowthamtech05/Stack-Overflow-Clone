@@ -1,4 +1,3 @@
-// Home.jsx
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import API from "../../api/axios";
@@ -86,9 +85,7 @@ export default function Home() {
 
   return (
     <div className="flex gap-6">
-      {/* Main */}
       <div className="flex-1 min-w-0">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-[11px] text-orange-500 uppercase tracking-widest mb-0.5">
@@ -111,7 +108,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Limit Banner */}
         {limitStatus && (
           <div
             className={`mb-5 px-4 py-3 rounded-xl border text-[13px] flex items-center justify-between ${
@@ -167,7 +163,6 @@ export default function Home() {
           </button>
         </form>
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-5 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
           {["newest", "active", "unanswered"].map((tab) => (
             <button
@@ -184,7 +179,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Questions */}
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-7 h-7 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
@@ -213,8 +207,6 @@ export default function Home() {
             ))}
           </div>
         )}
-
-        {/* Pagination */}
         {pages > 1 && (
           <div className="flex items-center justify-center gap-1 mt-8">
             {["First", "Prev"].map((label) => (
@@ -278,7 +270,6 @@ function QuestionRow({ question: q, translated }) {
 
   return (
     <div className="group flex gap-4 p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-orange-200 dark:hover:border-gray-700 transition-all">
-      {/* Stats */}
       <div className="flex flex-col gap-2 shrink-0 w-16 text-center">
         <div>
           <p
@@ -304,7 +295,6 @@ function QuestionRow({ question: q, translated }) {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <Link
           to={`/question/${q._id}`}
@@ -360,7 +350,6 @@ function RightSidebar({ allQuestions = [] }) {
 
   return (
     <div className="space-y-4">
-      {/* Overflow Blog */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
           <p className="text-[10px] text-orange-500 uppercase tracking-widest mb-0.5">
@@ -399,7 +388,7 @@ function RightSidebar({ allQuestions = [] }) {
         </div>
       </div>
 
-      {/* Hot Network Questions */}
+      {/* Hot Questions */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
           <p className="text-[10px] text-orange-500 uppercase tracking-widest mb-0.5">

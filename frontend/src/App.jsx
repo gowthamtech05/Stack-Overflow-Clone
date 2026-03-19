@@ -1,4 +1,3 @@
-// App.jsx
 import AppRoutes from "./routes";
 
 function App() {

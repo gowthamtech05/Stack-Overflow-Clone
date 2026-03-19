@@ -14,7 +14,6 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// ✅ New route — unread count
 router.get("/unread-count", protect, async (req, res) => {
   try {
     const count = await Notification.countDocuments({

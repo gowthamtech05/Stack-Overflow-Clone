@@ -14,7 +14,7 @@ import Leaderboard from "./pages/Main/Leaderboard";
 import Notifications from "./pages/Main/Notifications";
 import MySubscription from "./pages/Users/MySubscription";
 import Friends from "./pages/Users/Friends";
-import Posts from "./pages/Questions/Posts"; // ← ADD THIS
+import Posts from "./pages/Questions/Posts"; 
 import SearchResults from "./pages/Users/SearchResults";
 import ForgotPassword from "./pages/Login/ForgotPassword";
 import Users from "./pages/Users/Users";
@@ -42,7 +42,7 @@ function AppLayout({ darkMode, setDarkMode }) {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/friends" element={<Friends />} />
-            <Route path="/posts" element={<Posts />} /> {/* ← ADD THIS */}
+            <Route path="/posts" element={<Posts />} /> 
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/users" element={<Users />} />
             <Route path="/question/:id" element={<QuestionDetails />} />
@@ -70,7 +70,6 @@ function AppLayout({ darkMode, setDarkMode }) {
   );
 }
 
-// 1. Import your provider (adjust the path to where your context file is)
 
 export default function AppRoutes() {
   const [darkMode, setDarkMode] = useState(
@@ -89,7 +88,6 @@ export default function AppRoutes() {
 
   return (
     <BrowserRouter>
-      {/* 2. Wrap AppLayout here! */}
       <LanguageProvider>
         <AppLayout darkMode={darkMode} setDarkMode={setDarkMode} />
       </LanguageProvider>

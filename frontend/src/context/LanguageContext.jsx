@@ -31,8 +31,6 @@ export function LanguageProvider({ children }) {
     setLanguageState(lang);
   }, []);
 
-  // translateBatch(texts, lang) — lang passed explicitly from the hook
-  // so it always uses the current language at call time, not a stale closure
   const translateBatch = useCallback(async (texts, lang) => {
     if (!texts || texts.length === 0) return texts;
     if (lang === "English") return texts;
@@ -50,7 +48,7 @@ export function LanguageProvider({ children }) {
       if (cacheRef.current[key] !== undefined) {
         results[i] = cacheRef.current[key];
       } else {
-        results[i] = text; // show original while loading
+        results[i] = text; 
         toFetch.push(text);
         toFetchIdx.push(i);
       }
@@ -70,11 +68,11 @@ export function LanguageProvider({ children }) {
         cacheRef.current[`${lang}__${toFetch[i]}`] = t;
       });
     } catch {
-      // keep originals on error
+
     }
 
     return results;
-  }, []); // stable — no deps needed
+  }, []); 
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, translateBatch }}>
