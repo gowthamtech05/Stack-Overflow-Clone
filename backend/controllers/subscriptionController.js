@@ -5,7 +5,6 @@ import Question from "../models/Question.js";
 import crypto from "crypto";
 import User from "../models/User.js";
 
-// ✅ Brevo API client — no SMTP, no IPv6 issue
 const sendInvoiceEmail = async (email, name, plan, amount, paymentId) => {
   try {
     const defaultClient = SibApiV3Sdk.ApiClient.instance;
@@ -86,7 +85,6 @@ export const verifyPayment = async (req, res) => {
     user.subscriptionExpiry = expiry;
     await user.save();
 
-    // ✅ Fire and forget — don't block response
     sendInvoiceEmail(
       user.email,
       user.name,
