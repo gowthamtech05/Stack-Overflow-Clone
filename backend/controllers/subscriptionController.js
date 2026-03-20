@@ -1,10 +1,48 @@
-import nodemailer from "nodemailer";
+import SibApiV3Sdk from "sib-api-v3-sdk";
 import razorpay from "../config/razorpay.js";
 import Payment from "../models/Payment.js";
 import Question from "../models/Question.js";
-
 import crypto from "crypto";
 import User from "../models/User.js";
+
+// ✅ Brevo API client — no SMTP, no IPv6 issue
+const sendInvoiceEmail = async (email, name, plan, amount, paymentId) => {
+  try {
+    const defaultClient = SibApiV3Sdk.ApiClient.instance;
+    const apiKey = defaultClient.authentications["api-key"];
+    apiKey.apiKey = process.env.BREVO_API_KEY;
+    const client = new SibApiV3Sdk.TransactionalEmailsApi();
+
+    const mail = new SibApiV3Sdk.SendSmtpEmail();
+    mail.to = [{ email }];
+    mail.sender = {
+      email: process.env.BREVO_SENDER_EMAIL,
+      name: "Stack Overflow Clone",
+    };
+    mail.subject = `✅ Invoice - ${plan} Plan Subscription`;
+    mail.htmlContent = `
+      <div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px">
+        <h2 style="color:#3b82f6">Payment Successful 🎉</h2>
+        <p>Hi <strong>${name}</strong>, your subscription has been activated.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
+        <table style="width:100%;font-size:14px;color:#374151">
+          <tr><td><strong>Plan</strong></td><td>${plan}</td></tr>
+          <tr><td><strong>Amount</strong></td><td>₹${amount}</td></tr>
+          <tr><td><strong>Payment ID</strong></td><td>${paymentId}</td></tr>
+          <tr><td><strong>Date</strong></td><td>${new Date().toDateString()}</td></tr>
+          <tr><td><strong>Valid Until</strong></td><td>${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toDateString()}</td></tr>
+        </table>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
+        <p style="font-size:12px;color:#9ca3af">Thank you for subscribing. Questions? Reply to this email.</p>
+      </div>
+    `;
+
+    await client.sendTransacEmail(mail);
+    console.log("Invoice email sent to", email);
+  } catch (err) {
+    console.error("Invoice email failed:", err.response?.body || err.message);
+  }
+};
 
 export const verifyPayment = async (req, res) => {
   try {
@@ -48,7 +86,8 @@ export const verifyPayment = async (req, res) => {
     user.subscriptionExpiry = expiry;
     await user.save();
 
-    await sendInvoiceEmail(
+    // ✅ Fire and forget — don't block response
+    sendInvoiceEmail(
       user.email,
       user.name,
       paymentPlan,
@@ -68,11 +107,13 @@ export const createOrder = async (req, res) => {
     const { plan } = req.body;
 
     const now = new Date();
-    const hourIST = now.toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      hour: "numeric",
-      hour12: false,
-    });
+    const hourIST = parseInt(
+      now.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        hour12: false,
+      }),
+    );
 
     if (hourIST < 10 || hourIST >= 11) {
       return res.status(400).json({
@@ -80,12 +121,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const planPrices = {
-      Bronze: 100,
-      Silver: 300,
-      Gold: 1000,
-    };
-
+    const planPrices = { Bronze: 100, Silver: 300, Gold: 1000 };
     const amount = planPrices[plan];
     if (!amount) return res.status(400).json({ message: "Invalid plan" });
 
@@ -113,7 +149,6 @@ export const createOrder = async (req, res) => {
 export const upgradeSubscription = async (req, res) => {
   try {
     const { plan, durationDays } = req.body;
-
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -122,7 +157,6 @@ export const upgradeSubscription = async (req, res) => {
     user.subscriptionExpiry = new Date(
       now.getTime() + durationDays * 24 * 60 * 60 * 1000,
     );
-
     await user.save();
 
     res.json({
@@ -143,6 +177,7 @@ export const getSubscriptionStatus = async (req, res) => {
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
+
     if (
       user.subscriptionExpiry &&
       new Date(user.subscriptionExpiry) < new Date()
@@ -160,13 +195,7 @@ export const getSubscriptionStatus = async (req, res) => {
       createdAt: { $gte: startOfDay },
     });
 
-    const limits = {
-      Free: 1,
-      Bronze: 5,
-      Silver: 10,
-      Gold: Infinity,
-    };
-
+    const limits = { Free: 1, Bronze: 5, Silver: 10, Gold: Infinity };
     const limit = limits[user.subscriptionPlan] || 1;
 
     res.json({
@@ -182,6 +211,7 @@ export const getSubscriptionStatus = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 export const subscribePlan = async (req, res) => {
   try {
     const { plan } = req.body;
@@ -190,7 +220,6 @@ export const subscribePlan = async (req, res) => {
 
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 30);
-
     user.subscriptionPlan = plan;
     user.subscriptionExpiry = expiry;
     await user.save();
@@ -199,36 +228,4 @@ export const subscribePlan = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
-
-const sendInvoiceEmail = async (email, name, plan, amount, paymentId) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"StackOverflow Clone" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `✅ Invoice - ${plan} Plan Subscription`,
-    html: `
-      <div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px">
-        <h2 style="color:#3b82f6">Payment Successful 🎉</h2>
-        <p>Hi <strong>${name}</strong>, your subscription has been activated.</p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
-        <table style="width:100%;font-size:14px;color:#374151">
-          <tr><td><strong>Plan</strong></td><td>${plan}</td></tr>
-          <tr><td><strong>Amount</strong></td><td>₹${amount}</td></tr>
-          <tr><td><strong>Payment ID</strong></td><td>${paymentId}</td></tr>
-          <tr><td><strong>Date</strong></td><td>${new Date().toDateString()}</td></tr>
-          <tr><td><strong>Valid Until</strong></td><td>${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toDateString()}</td></tr>
-        </table>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
-        <p style="font-size:12px;color:#9ca3af">Thank you for subscribing. Questions? Reply to this email.</p>
-      </div>
-    `,
-  });
 };
