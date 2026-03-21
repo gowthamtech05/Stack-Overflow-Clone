@@ -24,7 +24,6 @@ export default function Navbar({ darkMode, setDarkMode }) {
   const [otpError, setOtpError] = useState("");
   const [otpSuccess, setOtpSuccess] = useState("");
 
-
   const [unreadCount, setUnreadCount] = useState(0);
 
   const dropdownRef = useRef(null);
@@ -35,7 +34,6 @@ export default function Navbar({ darkMode, setDarkMode }) {
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.label === language);
 
-  
   useEffect(() => {
     if (!user) return;
     const fetchUnread = async () => {
@@ -49,7 +47,6 @@ export default function Navbar({ darkMode, setDarkMode }) {
     return () => clearInterval(interval);
   }, [user]);
 
-  
   useEffect(() => {
     if (location.pathname === "/notifications") {
       setUnreadCount(0);
@@ -119,8 +116,8 @@ export default function Navbar({ darkMode, setDarkMode }) {
       await API.post("/users/request-language-change", { language: langLabel });
       setOtpSuccess(
         langLabel === "French"
-          ? "OTP sent to your registered email."
-          : "OTP sent to your registered mobile number.",
+          ? "OTP sent to your registered mobile number."
+          : "OTP sent to your registered email.",
       );
       setOtpSent(true);
     } catch (err) {
@@ -434,7 +431,6 @@ export default function Navbar({ darkMode, setDarkMode }) {
               </div>
             ) : (
               <div className="hidden md:flex items-center gap-1 ml-1">
-                
                 <Link
                   to="/notifications"
                   className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 transition-colors"
@@ -608,7 +604,7 @@ export default function Navbar({ darkMode, setDarkMode }) {
                         d="M4 6h16M4 12h16M4 18h16"
                       />
                     </svg>
-                   
+
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full border-2 border-white dark:border-gray-900" />
                     )}
